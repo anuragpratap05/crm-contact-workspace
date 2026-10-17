@@ -1,8 +1,17 @@
 import type { FilterQuery, SortOrder } from 'mongoose';
 import { ContactModel, type Contact } from '../models/contact.model.js';
-import { NotFoundError } from '../errors/AppError.js';
+import {
+  DuplicateEmailError,
+  NotFoundError,
+  VersionConflictError,
+} from '../errors/AppError.js';
 import { digitsOnly, escapeRegex } from '../utils/normalize.js';
-import type { ListContactsQuery } from '../validators/contact.validator.js';
+import type {
+  ListContactsQuery,
+  UpdateContactBody,
+} from '../validators/contact.validator.js';
+import { ActivityType } from '../models/activity.model.js';
+import { recordActivity } from './activity.service.js';
 
 export interface ContactResponse {
   id: string;
@@ -131,4 +140,83 @@ export async function getContactById(id: string): Promise<ContactResponse> {
 export async function listDistinctTags(): Promise<string[]> {
   const tags = await ContactModel.distinct('tags').exec();
   return (tags as string[]).filter(Boolean).sort((a, b) => a.localeCompare(b));
+}
+
+const EDITABLE_FIELDS = ['firstName', 'lastName', 'email', 'phone', 'company'] as const;
+
+type EditableField = (typeof EDITABLE_FIELDS)[number];
+
+function isDuplicateKeyError(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && (err as { code?: number }).code === 11000;
+}
+
+function buildUpdate(body: UpdateContactBody) {
+  const email = body.email?.toLowerCase() ?? null;
+
+  return {
+    firstName: body.firstName,
+    lastName: body.lastName,
+    email,
+    phone: body.phone,
+    company: body.company,
+    firstNameLower: body.firstName.toLowerCase(),
+    lastNameLower: body.lastName.toLowerCase(),
+    companyLower: body.company?.toLowerCase() ?? null,
+    phoneDigits: digitsOnly(body.phone) ?? null,
+  };
+}
+
+function changedFields(previous: ContactRecord, body: UpdateContactBody): EditableField[] {
+  return EDITABLE_FIELDS.filter((field) => {
+    const before = previous[field] ?? null;
+    const after = field === 'email' ? (body.email?.toLowerCase() ?? null) : (body[field] ?? null);
+    return before !== after;
+  });
+}
+
+export async function updateContact(
+  id: string,
+  body: UpdateContactBody,
+): Promise<ContactResponse> {
+  const previous = await ContactModel.findById(id).lean<ContactRecord>().exec();
+
+  if (!previous) {
+    throw new NotFoundError('Contact');
+  }
+
+  const update = buildUpdate(body);
+
+  let updated: ContactRecord | null;
+  try {
+    updated = await ContactModel.findOneAndUpdate(
+      { _id: id, version: body.version },
+      { $set: update, $inc: { version: 1 } },
+      { new: true, runValidators: true },
+    )
+      .lean<ContactRecord>()
+      .exec();
+  } catch (err) {
+    if (isDuplicateKeyError(err) && update.email) {
+      throw new DuplicateEmailError(update.email);
+    }
+    throw err;
+  }
+
+  if (!updated) {
+    const current = await ContactModel.findById(id).lean<ContactRecord>().exec();
+
+    if (!current) {
+      throw new NotFoundError('Contact');
+    }
+
+    throw new VersionConflictError(toContactResponse(current));
+  }
+
+  const fields = changedFields(previous, body);
+
+  if (fields.length > 0) {
+    await recordActivity(id, ActivityType.CONTACT_UPDATED, { fields });
+  }
+
+  return toContactResponse(updated);
 }
