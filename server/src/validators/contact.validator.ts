@@ -36,6 +36,51 @@ export const listContactsQuerySchema = z
 
 export type ListContactsQuery = z.infer<typeof listContactsQuerySchema>;
 
+const optionalText = (max: number) =>
+  z
+    .union([z.string(), z.null()])
+    .optional()
+    .transform((value) => {
+      const trimmed = typeof value === 'string' ? value.trim() : '';
+      return trimmed ? trimmed : null;
+    })
+    .refine((value) => value === null || value.length <= max, {
+      message: `Must be at most ${max} characters`,
+    });
+
+export const updateContactBodySchema = z.object({
+  firstName: z.string().trim().min(1, 'First name is required').max(80),
+  lastName: z.string().trim().min(1, 'Last name is required').max(80),
+  email: optionalText(254).refine(
+    (value) => value === null || z.string().email().safeParse(value).success,
+    { message: 'Must be a valid email address' },
+  ),
+  phone: optionalText(40),
+  company: optionalText(120),
+  version: z.preprocess(
+    (value) => {
+      if (value === undefined || value === null || value === '') return undefined;
+      const parsed = Number(value);
+      return Number.isNaN(parsed) ? value : parsed;
+    },
+    z
+      .number({
+        required_error: 'Version is required to detect conflicting updates',
+        invalid_type_error: 'Version must be a number',
+      })
+      .int()
+      .min(0),
+  ),
+});
+
+export type UpdateContactBody = z.infer<typeof updateContactBodySchema>;
+
+export const activityQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export type ActivityQuery = z.infer<typeof activityQuerySchema>;
+
 export const contactIdParamSchema = z.object({
   id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid contact id'),
 });
