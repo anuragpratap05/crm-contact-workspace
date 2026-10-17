@@ -1,5 +1,6 @@
 import { connectDatabase, disconnectDatabase } from '../config/db.js';
 import { ContactModel } from '../models/contact.model.js';
+import { ActivityModel } from '../models/activity.model.js';
 import { logger } from '../utils/logger.js';
 import { digitsOnly } from '../utils/normalize.js';
 
@@ -102,7 +103,9 @@ async function seed() {
   }
 
   await ContactModel.deleteMany({});
+  await ActivityModel.deleteMany({});
   await ContactModel.syncIndexes();
+  await ActivityModel.syncIndexes();
 
   const contacts = buildContacts();
   await ContactModel.insertMany(contacts, { ordered: false });
