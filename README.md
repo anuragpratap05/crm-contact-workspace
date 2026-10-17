@@ -65,6 +65,7 @@ curl http://localhost:4000/api/health/ready
 | `npm start` | Run the compiled build |
 | `npm run typecheck` | Type check without emitting |
 | `npm test` | Run tests |
+| `npm run seed` | Load 250 sample contacts (`-- --force` to replace existing) |
 
 ### Environment variables
 
@@ -78,6 +79,63 @@ curl http://localhost:4000/api/health/ready
 
 Validated at startup — the server refuses to boot on invalid config rather than
 failing later at request time.
+
+---
+
+## API
+
+### `GET /api/contacts`
+
+Search, filtering, sorting and pagination are all performed by the backend.
+
+| Query param | Values | Default | Notes |
+|---|---|---|---|
+| `search` | string | — | Prefix match on first name, last name, email or phone |
+| `tags` | comma-separated | — | e.g. `tags=VIP,Lead` |
+| `tagMatch` | `any` \| `all` | `any` | Whether a contact must match any or all of `tags` |
+| `company` | string | — | Exact match, case-insensitive |
+| `createdFrom` | ISO date | — | Inclusive lower bound |
+| `createdTo` | ISO date | — | Inclusive upper bound |
+| `sortBy` | `name` \| `createdAt` \| `updatedAt` | `createdAt` | |
+| `sortOrder` | `asc` \| `desc` | `desc` | |
+| `page` | integer ≥ 1 | `1` | |
+| `limit` | 1–100 | `20` | Capped server-side |
+
+```json
+{
+  "items": [
+    {
+      "id": "6ad36a9f056b3ff2b05514ec",
+      "firstName": "Laura",
+      "lastName": "Wilson",
+      "email": "laura.wilson249@lumen.com",
+      "phone": "+1-797-5769",
+      "company": "Lumen Analytics",
+      "tags": ["Customer", "Prospect"],
+      "version": 0,
+      "createdAt": "2026-10-17T05:21:00.000Z",
+      "updatedAt": "2026-10-17T05:21:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1, "limit": 20, "total": 250, "totalPages": 13,
+    "hasNextPage": true, "hasPreviousPage": false
+  }
+}
+```
+
+### `GET /api/contacts/:id`
+
+Returns `{ "data": Contact }`, or `404` with code `NOT_FOUND`.
+
+### `GET /api/tags`
+
+Returns `{ "data": string[] }` — the distinct tags in use, for populating filter controls.
+
+### `GET /api/health` · `GET /api/health/ready`
+
+Liveness and readiness. `/health` does not touch the database; `/health/ready`
+reports database connectivity and returns `503` when not connected.
 
 ---
 
