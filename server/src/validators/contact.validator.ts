@@ -84,3 +84,33 @@ export type ActivityQuery = z.infer<typeof activityQuerySchema>;
 export const contactIdParamSchema = z.object({
   id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid contact id'),
 });
+
+const tagValue = z
+  .string()
+  .trim()
+  .min(1, 'Tag is required')
+  .max(40, 'Tag must be at most 40 characters');
+
+export const addTagBodySchema = z.object({
+  tag: tagValue,
+});
+
+export type AddTagBody = z.infer<typeof addTagBodySchema>;
+
+export const tagParamSchema = z.object({
+  id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid contact id'),
+  tag: tagValue,
+});
+
+export type TagParams = z.infer<typeof tagParamSchema>;
+
+export const bulkTagBodySchema = z.object({
+  contactIds: z
+    .array(z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid contact id'))
+    .min(1, 'At least one contact is required')
+    .max(500, 'At most 500 contacts can be updated in one request'),
+  tag: tagValue,
+  action: z.enum(['add', 'remove']),
+});
+
+export type BulkTagBody = z.infer<typeof bulkTagBodySchema>;

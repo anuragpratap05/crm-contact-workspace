@@ -1,15 +1,21 @@
 import type { RequestHandler } from 'express';
 import { validated } from '../middleware/validate.js';
 import {
+  addTagToContact,
+  bulkUpdateTag,
   getContactById,
   listContacts,
   listDistinctTags,
+  removeTagFromContact,
   updateContact,
 } from '../services/contact.service.js';
 import { listActivitiesForContact } from '../services/activity.service.js';
 import type {
   ActivityQuery,
+  AddTagBody,
+  BulkTagBody,
   ListContactsQuery,
+  TagParams,
   UpdateContactBody,
 } from '../validators/contact.validator.js';
 
@@ -43,4 +49,23 @@ export const getContactActivities: RequestHandler = async (req, res) => {
   await getContactById(id);
   const activities = await listActivitiesForContact(id, limit);
   res.json({ data: activities });
+};
+
+export const postContactTag: RequestHandler = async (req, res) => {
+  const { id } = validated<{ id: string }>(req, 'params');
+  const { tag } = validated<AddTagBody>(req, 'body');
+  const contact = await addTagToContact(id, tag);
+  res.json({ data: contact });
+};
+
+export const deleteContactTag: RequestHandler = async (req, res) => {
+  const { id, tag } = validated<TagParams>(req, 'params');
+  const contact = await removeTagFromContact(id, tag);
+  res.json({ data: contact });
+};
+
+export const postBulkTag: RequestHandler = async (req, res) => {
+  const body = validated<BulkTagBody>(req, 'body');
+  const result = await bulkUpdateTag(body);
+  res.json({ data: result });
 };
