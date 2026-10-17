@@ -156,6 +156,36 @@ optional — omitting one clears it. On success the contact is returned with
 | `409` | `VERSION_CONFLICT` | Someone else saved first. `details.current` holds the current server state |
 | `409` | `DUPLICATE_EMAIL` | Another contact already uses that email |
 
+### `POST /api/contacts/:id/tags`
+
+Adds a tag. Body: `{ "tag": "VIP" }`. Idempotent — adding a tag the contact
+already has succeeds and changes nothing.
+
+### `DELETE /api/contacts/:id/tags/:tag`
+
+Removes a tag. Also idempotent. URL-encode the tag if it contains spaces
+(`Hot%20Lead`).
+
+### `POST /api/contacts/tags/bulk`
+
+Adds or removes one tag across many contacts in a single request.
+
+```json
+{
+  "contactIds": ["6ad36a9f...", "6ad36a9f..."],
+  "tag": "Roadshow",
+  "action": "add"
+}
+```
+
+Returns how many contacts matched and how many actually changed:
+
+```json
+{ "data": { "matched": 5, "modified": 5, "tag": "Roadshow", "action": "add" } }
+```
+
+Limited to 500 contacts per request.
+
 ### `GET /api/contacts/:id/activities`
 
 Recent activity for a contact, newest first. `?limit=` (1–100, default 20).
@@ -205,6 +235,14 @@ what changed rather than silently discarding the edit.
 
 Verified with 8 simultaneous writers sending the same version: 1 succeeded, 7
 were rejected.
+
+**Tag operations do not use the version check.** They are managed through their
+own endpoints and never overlap with the fields `PUT` writes, so there is no
+lost update to prevent. `$addToSet` and `$pull` are atomic and idempotent on
+their own — verified with 10 concurrent adds of the same tag, which produced
+one tag and one activity entry. Keeping tags out of the version check also
+avoids false conflicts: someone tagging a contact does not invalidate an edit
+form another user already has open.
 
 ---
 
