@@ -128,6 +128,52 @@ Search, filtering, sorting and pagination are all performed by the backend.
 
 Returns `{ "data": Contact }`, or `404` with code `NOT_FOUND`.
 
+### `PUT /api/contacts/:id`
+
+Updates a contact. The request **must** include the `version` the client last
+read — this is how stale writes are detected.
+
+```json
+{
+  "firstName": "Laura",
+  "lastName": "Wilson",
+  "email": "laura.wilson@lumen.com",
+  "phone": "+1-797-5769",
+  "company": "Lumen Analytics",
+  "version": 3
+}
+```
+
+`firstName` and `lastName` are required. `email`, `phone` and `company` are
+optional — omitting one clears it. On success the contact is returned with
+`version` incremented.
+
+| Status | Code | Meaning |
+|---|---|---|
+| `200` | — | Updated |
+| `400` | `VALIDATION_ERROR` | Invalid body |
+| `404` | `NOT_FOUND` | No such contact |
+| `409` | `VERSION_CONFLICT` | Someone else saved first. `details.current` holds the current server state |
+| `409` | `DUPLICATE_EMAIL` | Another contact already uses that email |
+
+### `GET /api/contacts/:id/activities`
+
+Recent activity for a contact, newest first. `?limit=` (1–100, default 20).
+
+```json
+{
+  "data": [
+    {
+      "id": "6ad386eaaec55485b2535e98",
+      "contactId": "6ad36a9f056b3ff2b05514ec",
+      "type": "CONTACT_UPDATED",
+      "metadata": { "fields": ["company"] },
+      "createdAt": "2026-10-17T14:32:10.508Z"
+    }
+  ]
+}
+```
+
 ### `GET /api/tags`
 
 Returns `{ "data": string[] }` — the distinct tags in use, for populating filter controls.
@@ -136,6 +182,29 @@ Returns `{ "data": string[] }` — the distinct tags in use, for populating filt
 
 Liveness and readiness. `/health` does not touch the database; `/health/ready`
 reports database connectivity and returns `503` when not connected.
+
+---
+
+## Concurrent updates
+
+Every contact carries a `version` number. Clients send back the version they
+read, and the update only applies if it still matches:
+
+```js
+findOneAndUpdate(
+  { _id: id, version: clientVersion },
+  { $set: changes, $inc: { version: 1 } },
+)
+```
+
+Because MongoDB applies a single-document update atomically, the match and the
+increment cannot interleave. If two users both read version 3 and both save,
+exactly one succeeds; the other matches nothing and receives `409
+VERSION_CONFLICT` with the current server state attached, so the UI can show
+what changed rather than silently discarding the edit.
+
+Verified with 8 simultaneous writers sending the same version: 1 succeeded, 7
+were rejected.
 
 ---
 
