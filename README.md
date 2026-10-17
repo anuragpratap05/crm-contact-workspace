@@ -64,8 +64,26 @@ curl http://localhost:4000/api/health/ready
 | `npm run build` | Compile TypeScript to `dist/` |
 | `npm start` | Run the compiled build |
 | `npm run typecheck` | Type check without emitting |
-| `npm test` | Run tests |
+| `npm test` | Run the test suite |
+| `npm run test:watch` | Run tests in watch mode |
 | `npm run seed` | Load 250 sample contacts (`-- --force` to replace existing) |
+
+### Tests
+
+```bash
+cd server
+npm test
+```
+
+55 integration tests covering the highest-risk paths: optimistic locking,
+email uniqueness, tag idempotency, pagination stability, search, filtering and
+input validation.
+
+Tests run against a real MongoDB started in memory by `mongodb-memory-server` —
+**you do not need MongoDB installed or running** to execute them, and they
+never touch your development data. The MongoDB version is pinned in
+`package.json` (`config.mongodbMemoryServer.version`) because the latest builds
+require macOS 14+.
 
 ### Environment variables
 
