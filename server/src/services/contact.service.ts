@@ -7,11 +7,12 @@ import {
 } from '../errors/AppError.js';
 import { digitsOnly, escapeRegex } from '../utils/normalize.js';
 import type {
+  BulkTagBody,
   ListContactsQuery,
   UpdateContactBody,
 } from '../validators/contact.validator.js';
 import { ActivityType } from '../models/activity.model.js';
-import { recordActivity } from './activity.service.js';
+import { recordActivities, recordActivity } from './activity.service.js';
 
 export interface ContactResponse {
   id: string;
@@ -219,4 +220,103 @@ export async function updateContact(
   }
 
   return toContactResponse(updated);
+}
+
+export async function addTagToContact(id: string, tag: string): Promise<ContactResponse> {
+  const changed = await ContactModel.findOneAndUpdate(
+    { _id: id, tags: { $ne: tag } },
+    { $addToSet: { tags: tag } },
+    { new: true },
+  )
+    .lean<ContactRecord>()
+    .exec();
+
+  if (changed) {
+    await recordActivity(id, ActivityType.TAG_ADDED, { tag });
+    return toContactResponse(changed);
+  }
+
+  const existing = await ContactModel.findById(id).lean<ContactRecord>().exec();
+
+  if (!existing) {
+    throw new NotFoundError('Contact');
+  }
+
+  return toContactResponse(existing);
+}
+
+export async function removeTagFromContact(
+  id: string,
+  tag: string,
+): Promise<ContactResponse> {
+  const changed = await ContactModel.findOneAndUpdate(
+    { _id: id, tags: tag },
+    { $pull: { tags: tag } },
+    { new: true },
+  )
+    .lean<ContactRecord>()
+    .exec();
+
+  if (changed) {
+    await recordActivity(id, ActivityType.TAG_REMOVED, { tag });
+    return toContactResponse(changed);
+  }
+
+  const existing = await ContactModel.findById(id).lean<ContactRecord>().exec();
+
+  if (!existing) {
+    throw new NotFoundError('Contact');
+  }
+
+  return toContactResponse(existing);
+}
+
+export interface BulkTagResult {
+  matched: number;
+  modified: number;
+  tag: string;
+  action: BulkTagBody['action'];
+}
+
+export async function bulkUpdateTag(body: BulkTagBody): Promise<BulkTagResult> {
+  const { contactIds, tag, action } = body;
+
+  const selector =
+    action === 'add'
+      ? { _id: { $in: contactIds }, tags: { $ne: tag } }
+      : { _id: { $in: contactIds }, tags: tag };
+
+  const affected = await ContactModel.find(selector)
+    .select({ _id: 1 })
+    .lean<{ _id: unknown }[]>()
+    .exec();
+
+  const affectedIds = affected.map((doc) => String(doc._id));
+
+  if (affectedIds.length === 0) {
+    const matched = await ContactModel.countDocuments({
+      _id: { $in: contactIds },
+    }).exec();
+
+    return { matched, modified: 0, tag, action };
+  }
+
+  const result = await ContactModel.updateMany(
+    { _id: { $in: affectedIds } },
+    action === 'add' ? { $addToSet: { tags: tag } } : { $pull: { tags: tag } },
+  ).exec();
+
+  await recordActivities(
+    affectedIds.map((contactId) => ({
+      contactId,
+      type: action === 'add' ? ActivityType.TAG_ADDED : ActivityType.TAG_REMOVED,
+      metadata: { tag, bulk: true },
+    })),
+  );
+
+  const matched = await ContactModel.countDocuments({
+    _id: { $in: contactIds },
+  }).exec();
+
+  return { matched, modified: result.modifiedCount, tag, action };
 }
