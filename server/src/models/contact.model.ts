@@ -37,6 +37,7 @@ contactSchema.index({ firstNameLower: 1 }, { name: 'search_first_name' });
 contactSchema.index({ phoneDigits: 1 }, { name: 'search_phone' });
 contactSchema.index({ tags: 1 }, { name: 'filter_tags' });
 contactSchema.index({ companyLower: 1 }, { name: 'filter_company' });
+contactSchema.index({ company: 1 }, { name: 'list_companies' });
 
 export type Contact = InferSchemaType<typeof contactSchema>;
 export type ContactDocument = HydratedDocument<Contact>;
