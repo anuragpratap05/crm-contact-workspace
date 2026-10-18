@@ -1,5 +1,6 @@
 import { api } from '@/lib/api/client'
 import type {
+  Activity,
   BulkTagAction,
   BulkTagResult,
   Contact,
@@ -77,6 +78,18 @@ export async function bulkTag(
     contactIds,
     tag,
     action,
+  })
+  return data.data
+}
+
+export async function fetchActivities(
+  id: string,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<Activity[]> {
+  const { data } = await api.get<{ data: Activity[] }>(`/contacts/${id}/activities`, {
+    params: { limit },
+    signal,
   })
   return data.data
 }
