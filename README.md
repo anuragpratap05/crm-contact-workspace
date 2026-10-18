@@ -126,6 +126,23 @@ than through a dev proxy, so local and deployed behaviour are the same.
 | `npm run preview` | Serve the production build locally |
 | `npm run typecheck` | Type check without building |
 | `npm run lint` | Lint with oxlint |
+| `npm test` | Run the test suite |
+| `npm run test:watch` | Run tests in watch mode |
+
+### Tests
+
+```bash
+cd client
+npm test
+```
+
+49 tests covering the highest-risk paths: the version-conflict resolution
+flow, the error-envelope parser, URL query-parameter handling, the bulk
+selection model, and the list's empty states.
+
+Components are tested against a mock API (MSW) rather than mocked modules, so
+the Axios instance, the response interceptor and TanStack Query all run for
+real.
 
 ### Environment variables
 
