@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { ApiErrorNotice } from '@/components/ApiErrorNotice'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ActivityPanel } from '@/features/contacts/ActivityPanel'
 import { ContactForm } from '@/features/contacts/ContactForm'
 import { TagEditor } from '@/features/contacts/TagEditor'
 import { useContactQuery } from '@/features/contacts/queries'
@@ -71,6 +72,11 @@ export default function ContactDetailPage() {
           <section className="rounded-lg border border-slate-200 bg-white p-5">
             <h2 className="mb-3 text-sm font-semibold text-slate-900">Tags</h2>
             <TagEditor contact={query.data} />
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <h2 className="mb-3 text-sm font-semibold text-slate-900">Recent activity</h2>
+            <ActivityPanel contactId={query.data.id} />
           </section>
         </>
       ) : null}
