@@ -11,6 +11,7 @@ import {
 } from '../validators/contact.validator.js';
 import {
   deleteContactTag,
+  getCompanies,
   getContact,
   getContactActivities,
   getContacts,
@@ -24,6 +25,7 @@ export const contactRouter = Router();
 
 contactRouter.get('/contacts', validate(listContactsQuerySchema, 'query'), getContacts);
 contactRouter.get('/tags', getTags);
+contactRouter.get('/companies', getCompanies);
 contactRouter.get(
   '/contacts/:id',
   validate(contactIdParamSchema, 'params'),
