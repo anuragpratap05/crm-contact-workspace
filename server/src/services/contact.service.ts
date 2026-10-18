@@ -143,6 +143,11 @@ export async function listDistinctTags(): Promise<string[]> {
   return (tags as string[]).filter(Boolean).sort((a, b) => a.localeCompare(b));
 }
 
+export async function listDistinctCompanies(): Promise<string[]> {
+  const companies = await ContactModel.distinct('company').exec();
+  return (companies as string[]).filter(Boolean).sort((a, b) => a.localeCompare(b));
+}
+
 const EDITABLE_FIELDS = ['firstName', 'lastName', 'email', 'phone', 'company'] as const;
 
 type EditableField = (typeof EDITABLE_FIELDS)[number];

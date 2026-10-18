@@ -5,6 +5,7 @@ import {
   bulkUpdateTag,
   getContactById,
   listContacts,
+  listDistinctCompanies,
   listDistinctTags,
   removeTagFromContact,
   updateContact,
@@ -34,6 +35,11 @@ export const getContact: RequestHandler = async (req, res) => {
 export const getTags: RequestHandler = async (_req, res) => {
   const tags = await listDistinctTags();
   res.json({ data: tags });
+};
+
+export const getCompanies: RequestHandler = async (_req, res) => {
+  const companies = await listDistinctCompanies();
+  res.json({ data: companies });
 };
 
 export const putContact: RequestHandler = async (req, res) => {
