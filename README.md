@@ -409,30 +409,37 @@ against a list of risks I chose rather than letting it pick; checking MongoDB
 query plans with `explain()` rather than assuming an index was used; debugging
 environment-specific failures; and drafting documentation.
 
-Checking the query plans caught two real problems: an `$or` branch on the
-partially indexed `email` field that was silently disabling index use for the
-whole query, and a `distinct("company")` that was a collection scan because the
-only company index covered `companyLower`.
+I made it a standing rule that no index assumption ships unverified. That rule
+caught two real problems: an `$or` branch on the partially indexed `email`
+field that was silently disabling index use for the whole query, and a
+`distinct("company")` that was a collection scan because the only company
+index covered `companyLower`.
 
-**A suggestion I rejected.** When configuring CORS for the deployed frontend,
-the suggested value kept the local dev origin alongside the production one:
-`http://localhost:5173,https://crm-contact-workspace.vercel.app`. It was
-already there, and it made it possible to test a production build against the
-live API.
+**Two suggestions I changed:**
 
-I rejected it. Production configuration should describe production. CORS does
-not restrict who can *call* this API — it is public and unauthenticated, so
-anything can `curl` it — but it does decide which browser origins may *read*
-the response, and listing a developer's machine is the kind of permission that
-survives long after the thing that made it harmless is gone. If the API later
-gained cookie-based auth, that entry would become a real problem rather than a
-cosmetic one. Local development already runs against a local API, so it was
-convenience, not necessity.
+**1. Pagination sorted on the chosen column alone.** Sorting by `createdAt`
+with `skip`/`limit` looks correct and passes every functional test. But rows
+with equal sort keys have no defined relative order, and each page is a
+separate query — so the database re-sorts from scratch and ties can land
+differently. A contact then appears on two pages while another is never shown.
+A test with 25 identically named contacts, paged through five pages, returned
+fewer than 25 distinct ids.
 
-The deployed value is the Vercel origin only. When I needed to verify a
-production build against the live API during deployment, I did it as a
-deliberate temporary change rather than standing configuration.
+Every sort now ends with `_id`, which is unique, so the ordering is total and
+deterministic. The indexes were built to match (`{ createdAt: -1, _id: -1 }`),
+so the tiebreaker costs nothing — without that, the extra sort field would
+force a blocking in-memory sort. The same total ordering is also the
+precondition for keyset pagination, so the migration off `skip` at scale needs
+no redesign.
+
+**2. CORS listing the local dev origin in production.** The suggested value
+kept `http://localhost:5173` alongside the Vercel origin, because it allowed
+testing a production build against the live API. I rejected it: production
+configuration should describe production. CORS does not restrict who can call
+this API — it is public, so anything can `curl` it — but it decides which
+browser origins may read the response, and that entry would become a real
+problem the moment cookie-based auth was added. Local development already runs
+against a local API, so it was convenience, not necessity.
 
 **On defending the implementation:** every decision here was reviewed and is
-one I can explain, including the ones where the first suggestion was wrong and
-had to be replaced.
+one I can explain, including the ones where the first version was wrong.
