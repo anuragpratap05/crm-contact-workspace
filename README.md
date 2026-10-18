@@ -3,10 +3,10 @@
 A simplified CRM contact workspace: browse, search, filter, view and update
 contacts, and manage their tags.
 
-> **Status:** in progress — backend foundation complete (Phase 1).
-> This README is filled in as the project is built; the submission version
-> covers setup, tech stack, data model, technical decisions, the concurrent
-> update approach, and scale considerations.
+**Live API:** https://crm-contact-workspace.onrender.com/api/health
+
+> **Status:** in progress — backend complete, tested and deployed.
+> Frontend not yet started.
 
 ---
 
@@ -19,7 +19,8 @@ contacts, and manage their tags.
 | Database | MongoDB (Mongoose) |
 | Validation | Zod |
 | Logging | pino |
-| Tests | Vitest + Supertest |
+| Tests | Vitest + Supertest + mongodb-memory-server |
+| Hosting | Render (API) · MongoDB Atlas (database) |
 
 ---
 
@@ -27,8 +28,9 @@ contacts, and manage their tags.
 
 ```
 .
+├── render.yaml      Deployment config for the API
 ├── server/          Backend API
-└── client/          Frontend app (Phase 7+)
+└── client/          Frontend app (not yet started)
 ```
 
 `server/` and `client/` are independent packages with their own
@@ -279,6 +281,61 @@ Every error uses one envelope, with a stable machine-readable `code`:
 ```
 
 Clients branch on `code`, never on `message`.
+
+---
+
+## Deployment
+
+The API runs on **Render**, backed by a **MongoDB Atlas** free cluster.
+
+`render.yaml` at the repository root describes the service, so the deployment
+is version-controlled rather than existing only as dashboard settings.
+
+```yaml
+rootDir: server                                  # monorepo: build from server/, not the repo root
+buildCommand: npm ci --include=dev && npm run build
+startCommand: npm start
+healthCheckPath: /api/health
+```
+
+### Notes on the configuration
+
+**`rootDir: server`** — the repository has no root `package.json`. Without
+this, the build finds nothing to install.
+
+**`--include=dev`** — `NODE_ENV=production` makes npm skip devDependencies,
+and TypeScript lives there. Without the flag the build fails with
+`tsc: not found`. The dev dependencies are used at build time only.
+
+**`MONGOMS_DISABLE_POSTINSTALL=1`** — `mongodb-memory-server` (a test
+dependency) downloads a ~150 MB MongoDB binary on install. Tests do not run on
+Render, so the download is skipped. This cut build time to about 50 seconds.
+
+**`sync: false`** on `MONGODB_URI` and `CORS_ORIGIN` — these are set in the
+Render dashboard, never committed. Everything else is non-secret and lives in
+the file.
+
+**`PORT` is not set.** Render injects it, and the app reads `process.env.PORT`.
+Hardcoding a port would make the service unreachable.
+
+### Environment variables to set in Render
+
+| Variable | Value |
+|---|---|
+| `MONGODB_URI` | Atlas connection string, including the database name |
+| `CORS_ORIGIN` | Deployed frontend origin, comma-separated for multiple |
+
+### MongoDB Atlas
+
+Network Access must include `0.0.0.0/0`. Render's free tier has no static
+outbound IP, so an address-based allowlist cannot work — access is controlled
+by the database credentials instead. Production would use VPC peering or
+private endpoints.
+
+### Free tier behaviour
+
+The instance **sleeps after 15 minutes of inactivity**; the next request takes
+30–60 seconds while it wakes. Requesting `/api/health` first warms it up.
 
 ---
 

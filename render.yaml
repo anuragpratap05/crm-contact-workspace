@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: crm-contact-workspace
+    runtime: node
+    plan: free
+    region: singapore
+    branch: dev
+    rootDir: server
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      - key: MONGOMS_DISABLE_POSTINSTALL
+        value: "1"
+      - key: MONGODB_URI
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
