@@ -5,8 +5,8 @@ contacts, and manage their tags.
 
 **Live API:** https://crm-contact-workspace.onrender.com/api/health
 
-> **Status:** in progress — backend complete, tested and deployed.
-> Frontend not yet started.
+> **Status:** in progress — backend complete, tested and deployed. Frontend
+> scaffolded; the contact table, editing and tag management are being built.
 
 ---
 
@@ -14,7 +14,7 @@ contacts, and manage their tags.
 
 | Layer | Choice |
 |---|---|
-| Frontend | React + TypeScript (Vite) — *not yet started* |
+| Frontend | React + TypeScript (Vite), Tailwind CSS, TanStack Query, Axios |
 | Backend | Node.js + Express 5 + TypeScript |
 | Database | MongoDB (Mongoose) |
 | Validation | Zod |
@@ -30,7 +30,7 @@ contacts, and manage their tags.
 .
 ├── render.yaml      Deployment config for the API
 ├── server/          Backend API
-└── client/          Frontend app (not yet started)
+└── client/          Frontend app
 ```
 
 `server/` and `client/` are independent packages with their own
@@ -99,6 +99,39 @@ require macOS 14+.
 
 Validated at startup — the server refuses to boot on invalid config rather than
 failing later at request time.
+
+---
+
+## Running the frontend
+
+**Prerequisites:** Node 20+, and the backend running (see above).
+
+```bash
+cd client
+npm install
+cp .env.example .env     # defaults to http://localhost:4000/api
+npm run dev
+```
+
+The app starts on `http://localhost:5173`, which is the origin the backend's
+`CORS_ORIGIN` already allows by default. Requests go straight to the API rather
+than through a dev proxy, so local and deployed behaviour are the same.
+
+### Scripts
+
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Dev server with hot reload |
+| `npm run build` | Type check and build to `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run typecheck` | Type check without building |
+| `npm run lint` | Lint with oxlint |
+
+### Environment variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `VITE_API_BASE_URL` | `http://localhost:4000/api` | Base URL of the API, including `/api` |
 
 ---
 
