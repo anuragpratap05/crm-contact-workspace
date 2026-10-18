@@ -3,6 +3,7 @@ import { useCallback } from 'react'
 import {
   addTag,
   bulkTag,
+  fetchActivities,
   fetchCompanies,
   fetchContact,
   fetchContacts,
@@ -20,6 +21,8 @@ export const contactKeys = {
   list: (query: ContactListQuery) => [...contactKeys.lists(), query] as const,
   details: () => [...contactKeys.all, 'detail'] as const,
   detail: (id: string) => [...contactKeys.details(), id] as const,
+  activities: (id: string) => [...contactKeys.all, 'activities', id] as const,
+  activityList: (id: string, limit: number) => [...contactKeys.activities(id), limit] as const,
 }
 
 export function useContactsQuery(params: ContactListParams) {
@@ -81,6 +84,7 @@ export function useUpdateContactMutation(id: string) {
     onSuccess: (contact) => {
       queryClient.setQueryData(contactKeys.detail(id), contact)
       void queryClient.invalidateQueries({ queryKey: contactKeys.lists() })
+      void queryClient.invalidateQueries({ queryKey: contactKeys.activities(id) })
     },
   })
 }
@@ -120,6 +124,7 @@ function useTagMutation(
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: contactKeys.lists() })
+      void queryClient.invalidateQueries({ queryKey: contactKeys.activities(id) })
       void queryClient.invalidateQueries({ queryKey: TAGS_QUERY_KEY })
     },
   })
@@ -159,5 +164,13 @@ export function useBulkTagMutation() {
       void queryClient.invalidateQueries({ queryKey: contactKeys.all })
       void queryClient.invalidateQueries({ queryKey: TAGS_QUERY_KEY })
     },
+  })
+}
+
+export function useActivitiesQuery(id: string, limit: number) {
+  return useQuery({
+    queryKey: contactKeys.activityList(id, limit),
+    queryFn: ({ signal }) => fetchActivities(id, limit, signal),
+    placeholderData: keepPreviousData,
   })
 }
