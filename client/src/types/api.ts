@@ -52,6 +52,15 @@ export interface BulkTagResult {
   action: BulkTagAction
 }
 
+export interface UpdateContactRequest {
+  firstName: string
+  lastName: string
+  email: string | null
+  phone: string | null
+  company: string | null
+  version: number
+}
+
 export type SortBy = 'name' | 'createdAt' | 'updatedAt'
 export type SortOrder = 'asc' | 'desc'
 export type TagMatch = 'any' | 'all'

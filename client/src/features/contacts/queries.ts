@@ -1,9 +1,9 @@
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import { fetchCompanies, fetchContacts, fetchTags } from './api'
+import { fetchCompanies, fetchContact, fetchContacts, fetchTags, updateContact } from './api'
 import { toContactListQuery } from '@/lib/queryParams'
 import type { ContactListParams } from '@/lib/queryParams'
-import type { ContactListQuery } from '@/types/api'
+import type { ContactListQuery, UpdateContactRequest } from '@/types/api'
 
 export const contactKeys = {
   all: ['contacts'] as const,
@@ -54,5 +54,24 @@ export function useCompaniesQuery() {
     queryKey: ['companies'],
     queryFn: ({ signal }) => fetchCompanies(signal),
     staleTime: FILTER_OPTIONS_STALE_TIME,
+  })
+}
+
+export function useContactQuery(id: string) {
+  return useQuery({
+    queryKey: contactKeys.detail(id),
+    queryFn: ({ signal }) => fetchContact(id, signal),
+  })
+}
+
+export function useUpdateContactMutation(id: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (body: UpdateContactRequest) => updateContact(id, body),
+    onSuccess: (contact) => {
+      queryClient.setQueryData(contactKeys.detail(id), contact)
+      void queryClient.invalidateQueries({ queryKey: contactKeys.lists() })
+    },
   })
 }
