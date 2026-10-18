@@ -12,6 +12,9 @@ interface Props {
   sortBy: SortBy
   sortOrder: SortOrder
   onSort: (field: SortBy) => void
+  selected: Set<string>
+  onToggle: (id: string) => void
+  onTogglePage: (ids: string[], checked: boolean) => void
 }
 
 interface SortableHeaderProps {
@@ -67,11 +70,26 @@ function TagCell({ tags }: { tags: string[] }) {
   )
 }
 
-export function ContactsTable({ contacts, isStale, sortBy, sortOrder, onSort }: Props) {
+export function ContactsTable({
+  contacts,
+  isStale,
+  sortBy,
+  sortOrder,
+  onSort,
+  selected,
+  onToggle,
+  onTogglePage,
+}: Props) {
   const navigate = useNavigate()
 
+  const pageIds = contacts.map((contact) => contact.id)
+  const selectedOnPage = pageIds.filter((id) => selected.has(id)).length
+  const allOnPageSelected = pageIds.length > 0 && selectedOnPage === pageIds.length
+
   const openContact = (event: MouseEvent<HTMLTableRowElement>, id: string) => {
-    if (event.target instanceof HTMLElement && event.target.closest('a')) return
+    if (event.target instanceof HTMLElement && event.target.closest('a, input, label, button')) {
+      return
+    }
     void navigate(`/contacts/${id}`)
   }
 
@@ -85,6 +103,18 @@ export function ContactsTable({ contacts, isStale, sortBy, sortOrder, onSort }: 
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-slate-200 text-left text-xs tracking-wide text-slate-500 uppercase">
+            <th scope="col" className="w-10 px-4 py-3">
+              <input
+                type="checkbox"
+                checked={allOnPageSelected}
+                ref={(node) => {
+                  if (node) node.indeterminate = selectedOnPage > 0 && !allOnPageSelected
+                }}
+                onChange={(event) => onTogglePage(pageIds, event.target.checked)}
+                aria-label="Select every contact on this page"
+                className="size-4 cursor-pointer rounded border-slate-300"
+              />
+            </th>
             <SortableHeader
               label="Name"
               field="name"
@@ -118,8 +148,19 @@ export function ContactsTable({ contacts, isStale, sortBy, sortOrder, onSort }: 
             <tr
               key={contact.id}
               onClick={(event) => openContact(event, contact.id)}
-              className="cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50"
+              className={`cursor-pointer border-b border-slate-100 last:border-0 hover:bg-slate-50 ${
+                selected.has(contact.id) ? 'bg-slate-50' : ''
+              }`}
             >
+              <td className="px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={selected.has(contact.id)}
+                  onChange={() => onToggle(contact.id)}
+                  aria-label={`Select ${contact.firstName} ${contact.lastName}`}
+                  className="size-4 cursor-pointer rounded border-slate-300"
+                />
+              </td>
               <td className="px-4 py-3 whitespace-nowrap">
                 <Link
                   to={`/contacts/${contact.id}`}
