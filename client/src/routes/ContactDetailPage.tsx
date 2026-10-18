@@ -1,8 +1,8 @@
 import { Link, useParams } from 'react-router-dom'
 import { ApiErrorNotice } from '@/components/ApiErrorNotice'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { TagChip } from '@/components/ui/TagChip'
 import { ContactForm } from '@/features/contacts/ContactForm'
+import { TagEditor } from '@/features/contacts/TagEditor'
 import { useContactQuery } from '@/features/contacts/queries'
 import { ApiError } from '@/lib/api/errors'
 import { formatDate } from '@/lib/format'
@@ -70,15 +70,7 @@ export default function ContactDetailPage() {
 
           <section className="rounded-lg border border-slate-200 bg-white p-5">
             <h2 className="mb-3 text-sm font-semibold text-slate-900">Tags</h2>
-            {query.data.tags.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {query.data.tags.map((tag) => (
-                  <TagChip key={tag} label={tag} />
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">No tags on this contact.</p>
-            )}
+            <TagEditor contact={query.data} />
           </section>
         </>
       ) : null}
