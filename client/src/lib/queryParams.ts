@@ -89,7 +89,9 @@ export function toSearchParams(params: ContactListParams): URLSearchParams {
 
   if (params.search) search.set('search', params.search)
   if (params.tags.length > 0) search.set('tags', params.tags.join(','))
-  if (params.tagMatch !== DEFAULTS.tagMatch) search.set('tagMatch', params.tagMatch)
+  if (params.tags.length > 1 && params.tagMatch !== DEFAULTS.tagMatch) {
+    search.set('tagMatch', params.tagMatch)
+  }
   if (params.company) search.set('company', params.company)
   if (params.createdFrom) search.set('createdFrom', params.createdFrom)
   if (params.createdTo) search.set('createdTo', params.createdTo)
