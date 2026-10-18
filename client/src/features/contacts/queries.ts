@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import { fetchContacts } from './api'
+import { fetchCompanies, fetchContacts, fetchTags } from './api'
 import { toContactListQuery } from '@/lib/queryParams'
 import type { ContactListParams } from '@/lib/queryParams'
 import type { ContactListQuery } from '@/types/api'
@@ -37,4 +37,22 @@ export function usePrefetchPage(params: ContactListParams) {
     },
     [params, queryClient],
   )
+}
+
+const FILTER_OPTIONS_STALE_TIME = 5 * 60_000
+
+export function useTagsQuery() {
+  return useQuery({
+    queryKey: ['tags'],
+    queryFn: ({ signal }) => fetchTags(signal),
+    staleTime: FILTER_OPTIONS_STALE_TIME,
+  })
+}
+
+export function useCompaniesQuery() {
+  return useQuery({
+    queryKey: ['companies'],
+    queryFn: ({ signal }) => fetchCompanies(signal),
+    staleTime: FILTER_OPTIONS_STALE_TIME,
+  })
 }
