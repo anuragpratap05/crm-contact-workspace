@@ -1,14 +1,18 @@
+import { useState } from 'react'
 import { ApiErrorNotice } from '@/components/ApiErrorNotice'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ActiveFilters } from '@/features/contacts/ActiveFilters'
 import { ContactsTable } from '@/features/contacts/ContactsTable'
 import { ContactsTableSkeleton } from '@/features/contacts/ContactsTableSkeleton'
+import { BulkTagBar } from '@/features/contacts/BulkTagBar'
+import { BulkTagDialog } from '@/features/contacts/BulkTagDialog'
 import { FilterBar } from '@/features/contacts/FilterBar'
 import { PaginationBar } from '@/features/contacts/PaginationBar'
 import { useContactListParams } from '@/features/contacts/useContactListParams'
+import { useContactSelection } from '@/features/contacts/useContactSelection'
 import { usePrefetchPage, useContactsQuery } from '@/features/contacts/queries'
 import { hasActiveFilters } from '@/lib/queryParams'
-import type { SortBy } from '@/types/api'
+import type { BulkTagAction, SortBy } from '@/types/api'
 
 const linkButtonClass =
   'rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50'
@@ -17,6 +21,8 @@ export default function ContactsPage() {
   const { params, update, clearFilters } = useContactListParams()
   const query = useContactsQuery(params)
   const prefetchPage = usePrefetchPage(params)
+  const selection = useContactSelection(params)
+  const [bulkAction, setBulkAction] = useState<BulkTagAction | null>(null)
 
   const filtered = hasActiveFilters(params)
 
@@ -35,6 +41,15 @@ export default function ContactsPage() {
       <FilterBar params={params} update={update} />
 
       <ActiveFilters params={params} update={update} onClearAll={clearFilters} />
+
+      {selection.selected.size > 0 ? (
+        <BulkTagBar
+          count={selection.selected.size}
+          atLimit={selection.atLimit}
+          onBulkTag={setBulkAction}
+          onClear={selection.clear}
+        />
+      ) : null}
 
       {query.isPending ? <ContactsTableSkeleton /> : null}
 
@@ -89,6 +104,9 @@ export default function ContactsPage() {
               sortBy={params.sortBy}
               sortOrder={params.sortOrder}
               onSort={handleSort}
+              selected={selection.selected}
+              onToggle={selection.toggle}
+              onTogglePage={selection.setMany}
             />
           ) : null}
 
@@ -102,6 +120,18 @@ export default function ContactsPage() {
             />
           ) : null}
         </>
+      ) : null}
+
+      {bulkAction ? (
+        <BulkTagDialog
+          action={bulkAction}
+          contactIds={[...selection.selected]}
+          onClose={() => setBulkAction(null)}
+          onDone={() => {
+            setBulkAction(null)
+            selection.clear()
+          }}
+        />
       ) : null}
     </div>
   )
