@@ -77,9 +77,9 @@ cd server
 npm test
 ```
 
-55 integration tests covering the highest-risk paths: optimistic locking,
-email uniqueness, tag idempotency, pagination stability, search, filtering and
-input validation.
+62 integration tests covering the highest-risk paths: optimistic locking,
+email uniqueness, tag idempotency, pagination stability, search, filtering,
+input validation and the tag and company listings.
 
 Tests run against a real MongoDB started in memory by `mongodb-memory-server` —
 **you do not need MongoDB installed or running** to execute them, and they
@@ -227,6 +227,16 @@ Recent activity for a contact, newest first. `?limit=` (1–100, default 20).
 ### `GET /api/tags`
 
 Returns `{ "data": string[] }` — the distinct tags in use, for populating filter controls.
+
+### `GET /api/companies`
+
+Returns `{ "data": string[] }` — the distinct companies in use, for the company
+filter dropdown. The `company` filter is an exact match, so the frontend needs
+the set of real values rather than a free-text box.
+
+Companies differing only in case are collapsed into one entry, because the
+filter itself is case-insensitive and would otherwise offer two options that
+return identical results.
 
 ### `GET /api/health` · `GET /api/health/ready`
 
