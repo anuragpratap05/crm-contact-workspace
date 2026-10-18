@@ -1,5 +1,12 @@
 import { api } from '@/lib/api/client'
-import type { Contact, ContactListQuery, PaginatedContacts, UpdateContactRequest } from '@/types/api'
+import type {
+  BulkTagAction,
+  BulkTagResult,
+  Contact,
+  ContactListQuery,
+  PaginatedContacts,
+  UpdateContactRequest,
+} from '@/types/api'
 
 function toRequestParams(query: ContactListQuery): Record<string, string> {
   const params: Record<string, string> = {}
@@ -46,5 +53,30 @@ export async function fetchContact(id: string, signal?: AbortSignal): Promise<Co
 
 export async function updateContact(id: string, body: UpdateContactRequest): Promise<Contact> {
   const { data } = await api.put<{ data: Contact }>(`/contacts/${id}`, body)
+  return data.data
+}
+
+export async function addTag(id: string, tag: string): Promise<Contact> {
+  const { data } = await api.post<{ data: Contact }>(`/contacts/${id}/tags`, { tag })
+  return data.data
+}
+
+export async function removeTag(id: string, tag: string): Promise<Contact> {
+  const { data } = await api.delete<{ data: Contact }>(
+    `/contacts/${id}/tags/${encodeURIComponent(tag)}`,
+  )
+  return data.data
+}
+
+export async function bulkTag(
+  contactIds: string[],
+  tag: string,
+  action: BulkTagAction,
+): Promise<BulkTagResult> {
+  const { data } = await api.post<{ data: BulkTagResult }>('/contacts/tags/bulk', {
+    contactIds,
+    tag,
+    action,
+  })
   return data.data
 }
