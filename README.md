@@ -397,6 +397,47 @@ private endpoints.
 The instance **sleeps after 15 minutes of inactivity**; the next request takes
 30–60 seconds while it wakes. Requesting `/api/health` first warms it up.
 
+Measured cold start: 22 seconds. The frontend's request timeout is 65 seconds
+so that the first request of the day succeeds rather than failing before the
+server is awake.
+
+---
+
+## Frontend deployment
+
+The frontend deploys to **Vercel** from the same repository.
+
+`client/vercel.json` holds the configuration that can live in the repo:
+
+```json
+{
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
+```
+
+The rewrite sends every unmatched path to `index.html`. Without it a reload on
+`/contacts/:id` would 404 on the static host instead of reaching the router —
+Vercel checks the filesystem first, so hashed assets are still served directly.
+
+### Project settings
+
+Two things cannot be expressed in `vercel.json` and are set in the Vercel
+project:
+
+| Setting | Value | Why |
+|---|---|---|
+| Root Directory | `client` | The repository has no root `package.json`; this is the same problem `rootDir: server` solves for Render |
+| `VITE_API_BASE_URL` | `https://crm-contact-workspace.onrender.com/api` | Baked into the bundle at build time, so it must be set before the build |
+
+### CORS
+
+`CORS_ORIGIN` on Render must include the deployed frontend origin, otherwise
+every request from it is blocked by the browser. It is a comma-separated list,
+so local development and the deployed origin can both be allowed.
+
 ---
 
 ## AI usage
