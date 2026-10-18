@@ -145,7 +145,15 @@ export async function listDistinctTags(): Promise<string[]> {
 
 export async function listDistinctCompanies(): Promise<string[]> {
   const companies = await ContactModel.distinct('company').exec();
-  return (companies as string[]).filter(Boolean).sort((a, b) => a.localeCompare(b));
+
+  const byLowercase = new Map<string, string>();
+  for (const company of companies as string[]) {
+    if (!company) continue;
+    const key = company.toLowerCase();
+    if (!byLowercase.has(key)) byLowercase.set(key, company);
+  }
+
+  return [...byLowercase.values()].sort((a, b) => a.localeCompare(b));
 }
 
 const EDITABLE_FIELDS = ['firstName', 'lastName', 'email', 'phone', 'company'] as const;
