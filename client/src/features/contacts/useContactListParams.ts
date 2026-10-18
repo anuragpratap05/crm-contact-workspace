@@ -7,6 +7,11 @@ interface UpdateOptions {
   replace?: boolean
 }
 
+export type UpdateContactListParams = (
+  patch: Partial<ContactListParams>,
+  options?: UpdateOptions,
+) => void
+
 export function useContactListParams() {
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -25,9 +30,16 @@ export function useContactListParams() {
     [params, setSearchParams],
   )
 
-  const reset = useCallback(() => {
-    setSearchParams(new URLSearchParams())
-  }, [setSearchParams])
+  const clearFilters = useCallback(() => {
+    update({
+      search: '',
+      tags: [],
+      tagMatch: DEFAULTS.tagMatch,
+      company: '',
+      createdFrom: '',
+      createdTo: '',
+    })
+  }, [update])
 
-  return { params, update, reset }
+  return { params, update, clearFilters }
 }
