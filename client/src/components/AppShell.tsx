@@ -1,11 +1,6 @@
-import { Link } from 'react-router-dom'
-import type { ReactNode } from 'react'
+import { Link, Outlet } from 'react-router-dom'
 
-interface Props {
-  children: ReactNode
-}
-
-export function AppShell({ children }: Props) {
+export function AppShell() {
   return (
     <div className="min-h-full bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white">
@@ -15,7 +10,9 @@ export function AppShell({ children }: Props) {
           </Link>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+      <main className="mx-auto max-w-6xl px-6 py-8">
+        <Outlet />
+      </main>
     </div>
   )
 }

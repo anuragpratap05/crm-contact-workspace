@@ -1,5 +1,5 @@
 import { api } from '@/lib/api/client'
-import type { ContactListQuery, PaginatedContacts } from '@/types/api'
+import type { Contact, ContactListQuery, PaginatedContacts, UpdateContactRequest } from '@/types/api'
 
 function toRequestParams(query: ContactListQuery): Record<string, string> {
   const params: Record<string, string> = {}
@@ -36,5 +36,15 @@ export async function fetchTags(signal?: AbortSignal): Promise<string[]> {
 
 export async function fetchCompanies(signal?: AbortSignal): Promise<string[]> {
   const { data } = await api.get<{ data: string[] }>('/companies', { signal })
+  return data.data
+}
+
+export async function fetchContact(id: string, signal?: AbortSignal): Promise<Contact> {
+  const { data } = await api.get<{ data: Contact }>(`/contacts/${id}`, { signal })
+  return data.data
+}
+
+export async function updateContact(id: string, body: UpdateContactRequest): Promise<Contact> {
+  const { data } = await api.put<{ data: Contact }>(`/contacts/${id}`, body)
   return data.data
 }
