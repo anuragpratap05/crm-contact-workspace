@@ -2,13 +2,49 @@ import { Link, useNavigate } from 'react-router-dom'
 import type { MouseEvent } from 'react'
 import { TagChip } from '@/components/ui/TagChip'
 import { formatDate } from '@/lib/format'
-import type { Contact } from '@/types/api'
+import type { Contact, SortBy, SortOrder } from '@/types/api'
 
 const VISIBLE_TAGS = 2
 
 interface Props {
   contacts: Contact[]
   isStale: boolean
+  sortBy: SortBy
+  sortOrder: SortOrder
+  onSort: (field: SortBy) => void
+}
+
+interface SortableHeaderProps {
+  label: string
+  field: SortBy
+  sortBy: SortBy
+  sortOrder: SortOrder
+  onSort: (field: SortBy) => void
+  hint?: string
+}
+
+function SortableHeader({ label, field, sortBy, sortOrder, onSort, hint }: SortableHeaderProps) {
+  const active = sortBy === field
+
+  return (
+    <th
+      scope="col"
+      aria-sort={active ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+      className="px-4 py-3 font-medium"
+    >
+      <button
+        type="button"
+        onClick={() => onSort(field)}
+        title={hint}
+        className="inline-flex items-center gap-1 uppercase hover:text-slate-900 focus:text-slate-900 focus:outline-none"
+      >
+        {label}
+        <span aria-hidden className={active ? 'text-slate-900' : 'text-slate-300'}>
+          {active ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
+        </span>
+      </button>
+    </th>
+  )
 }
 
 function TagCell({ tags }: { tags: string[] }) {
@@ -31,7 +67,7 @@ function TagCell({ tags }: { tags: string[] }) {
   )
 }
 
-export function ContactsTable({ contacts, isStale }: Props) {
+export function ContactsTable({ contacts, isStale, sortBy, sortOrder, onSort }: Props) {
   const navigate = useNavigate()
 
   const openContact = (event: MouseEvent<HTMLTableRowElement>, id: string) => {
@@ -49,12 +85,32 @@ export function ContactsTable({ contacts, isStale }: Props) {
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-slate-200 text-left text-xs tracking-wide text-slate-500 uppercase">
-            <th scope="col" className="px-4 py-3 font-medium">Name</th>
+            <SortableHeader
+              label="Name"
+              field="name"
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSort={onSort}
+              hint="Sorts by last name, then first name"
+            />
             <th scope="col" className="px-4 py-3 font-medium">Email</th>
             <th scope="col" className="px-4 py-3 font-medium">Phone</th>
             <th scope="col" className="px-4 py-3 font-medium">Company</th>
             <th scope="col" className="px-4 py-3 font-medium">Tags</th>
-            <th scope="col" className="px-4 py-3 font-medium">Updated</th>
+            <SortableHeader
+              label="Created"
+              field="createdAt"
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSort={onSort}
+            />
+            <SortableHeader
+              label="Updated"
+              field="updatedAt"
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSort={onSort}
+            />
           </tr>
         </thead>
         <tbody>
@@ -83,6 +139,9 @@ export function ContactsTable({ contacts, isStale }: Props) {
               </td>
               <td className="px-4 py-3">
                 <TagCell tags={contact.tags} />
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap text-slate-500">
+                {formatDate(contact.createdAt)}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-slate-500">
                 {formatDate(contact.updatedAt)}

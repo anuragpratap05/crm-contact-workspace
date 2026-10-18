@@ -1,5 +1,5 @@
 const ROWS = 8
-const COLUMNS = 6
+const COLUMNS = 7
 
 export function ContactsTableSkeleton() {
   return (
