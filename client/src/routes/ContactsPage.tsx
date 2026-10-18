@@ -1,30 +1,40 @@
 import { ApiErrorNotice } from '@/components/ApiErrorNotice'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ActiveFilters } from '@/features/contacts/ActiveFilters'
 import { ContactsTable } from '@/features/contacts/ContactsTable'
 import { ContactsTableSkeleton } from '@/features/contacts/ContactsTableSkeleton'
+import { FilterBar } from '@/features/contacts/FilterBar'
 import { PaginationBar } from '@/features/contacts/PaginationBar'
 import { useContactListParams } from '@/features/contacts/useContactListParams'
 import { usePrefetchPage, useContactsQuery } from '@/features/contacts/queries'
 import { hasActiveFilters } from '@/lib/queryParams'
+import type { SortBy } from '@/types/api'
 
 const linkButtonClass =
   'rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50'
 
 export default function ContactsPage() {
-  const { params, update, reset } = useContactListParams()
+  const { params, update, clearFilters } = useContactListParams()
   const query = useContactsQuery(params)
   const prefetchPage = usePrefetchPage(params)
 
   const filtered = hasActiveFilters(params)
 
+  const handleSort = (field: SortBy) => {
+    if (params.sortBy === field) {
+      update({ sortOrder: params.sortOrder === 'asc' ? 'desc' : 'asc' })
+      return
+    }
+    update({ sortBy: field, sortOrder: field === 'name' ? 'asc' : 'desc' })
+  }
+
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Contacts</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Search, filtering and sorting arrive in the next phase.
-        </p>
-      </div>
+      <h1 className="text-xl font-semibold tracking-tight">Contacts</h1>
+
+      <FilterBar params={params} update={update} />
+
+      <ActiveFilters params={params} update={update} onClearAll={clearFilters} />
 
       {query.isPending ? <ContactsTableSkeleton /> : null}
 
@@ -48,7 +58,7 @@ export default function ContactsPage() {
               }
               action={
                 filtered ? (
-                  <button type="button" onClick={reset} className={linkButtonClass}>
+                  <button type="button" onClick={clearFilters} className={linkButtonClass}>
                     Clear filters
                   </button>
                 ) : null
@@ -73,7 +83,13 @@ export default function ContactsPage() {
           ) : null}
 
           {query.data.items.length > 0 ? (
-            <ContactsTable contacts={query.data.items} isStale={query.isPlaceholderData} />
+            <ContactsTable
+              contacts={query.data.items}
+              isStale={query.isPlaceholderData}
+              sortBy={params.sortBy}
+              sortOrder={params.sortOrder}
+              onSort={handleSort}
+            />
           ) : null}
 
           {query.data.pagination.total > 0 ? (
